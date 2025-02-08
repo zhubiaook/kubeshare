@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    kubeadm.kubernetes.io/kube-apiserver.advertise-address.endpoint: ${IP}:6443
+  labels:
+    component: kube-apiserver
+    tier: control-plane
+  name: kube-apiserver
+  namespace: kube-system
+spec:
+  containers:
+  - name: kube-apiserver
+    image: registry.cn-hangzhou.aliyuncs.com/google_containers/kube-apiserver:v1.26.7
+    command:
+    - kube-apiserver
+    - --advertise-address=${IP}
+    - --allow-privileged=true
+    - --authorization-mode=Node,RBAC
+    - --bind-address=0.0.0.0
+    - --secure-port=6443
+    - --service-cluster-ip-range=10.250.0.0/16
+    - --service-node-port-range=80-32767
+    - --etcd-servers=${ETCD_SERVERS}
+    - --client-ca-file=/etc/kubernetes/pki/ca.pem
+    - --kubelet-client-certificate=/etc/kubernetes/pki/kubeapiserver.pem
+    - --kubelet-client-key=/etc/kubernetes/pki/kubeapiserver-key.pem
+    - --service-account-issuer=https://kubernetes.default.svc.cluster.local
+    - --service-account-key-file=/etc/kubernetes/pki/kubeapiserver.pem
+    - --service-account-signing-key-file=/etc/kubernetes/pki/kubeapiserver-key.pem
+    - --tls-cert-file=/etc/kubernetes/pki/kubeapiserver.pem
+    - --tls-private-key-file=/etc/kubernetes/pki/kubeapiserver-key.pem
+    imagePullPolicy: IfNotPresent
+    volumeMounts:
+    - mountPath: /etc/kubernetes/pki
+      name: k8s-certs
+      readOnly: true
+  hostNetwork: true
+  volumes:
+  - hostPath:
+      path: ${K8S_CERT_DIR}
+      type: DirectoryOrCreate
+    name: k8s-certs
